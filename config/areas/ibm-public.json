@@ -1,0 +1,16 @@
+{
+  "id": "ibm-public",
+  "displayName": "IBM Public Environment",
+  "libraries": {
+    "programs": ["ZXP.PUBLIC.SOURCE"],
+    "copybooks": ["ZXP.PUBLIC.COPYLIB"],
+    "jcl": ["ZXP.PUBLIC.JCL", "Z75221.JCL"],
+    "procs": ["ZXP.PUBLIC.PROCLIB"]
+  },
+  "patterns": {
+    "programs": ["CBL*"],
+    "copybooks": ["CPY*"],
+    "jcl": ["JCL*"],
+    "procs": ["PRC*"]
+  }
+}

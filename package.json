@@ -1,0 +1,92 @@
+{
+  "name": "mainframe-hub-assistant",
+  "displayName": "Mainframe Hub Assistant",
+  "description": "Uma camada inteligente de suporte à migração TSO -> VS Code e desenvolvimento Mainframe.",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "mainframe.hubAssistant",
+        "name": "mainframehub",
+        "description": "Assistente Mainframe: TSO, Zowe, JCL, COBOL e Otimização de IA",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "como-fazia-no-tso",
+            "description": "Como fazer algo que antes era feito no TSO/ISPF"
+          },
+          {
+            "name": "explicar",
+            "description": "Explicar sintaxe ou processo"
+          },
+          {
+            "name": "onboarding",
+            "description": "Guia inicial passo a passo"
+          },
+          {
+            "name": "abend",
+            "description": "Ajuda com troubleshooting de ABENDs"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "mainframeHub.testZoweReadOnly",
+        "title": "Mainframe Hub: Test Zowe Read-Only"
+      },
+      {
+        "command": "mainframeHub.testModelAccess",
+        "title": "Mainframe Hub: Test Model Access"
+      },
+      {
+        "command": "mainframeHub.testGpt4oMiniCall",
+        "title": "Mainframe Hub: Test GPT-4o Mini Call"
+      },
+      {
+        "command": "mainframeHub.testContextProcessor",
+        "title": "Mainframe Hub: Test Context Processor"
+      },
+      {
+        "command": "mainframeHub.testJclSkillPipeline",
+        "title": "Mainframe Hub: Test JCL Skill Pipeline"
+      },
+      {
+        "command": "mainframeHub.testJclRouterPipeline",
+        "title": "Mainframe Hub: Test JCL Router Pipeline"
+      },
+      {
+        "command": "mainframeHub.testJclLlmPipeline",
+        "title": "Mainframe Hub: Test JCL LLM Pipeline"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
+  },
+  "dependencies": {
+    "@zowe/core-for-zowe-sdk": "^8.37.1",
+    "@zowe/imperative": "^8.37.1",
+    "@zowe/zos-files-for-zowe-sdk": "^8.37.1",
+    "@zowe/zos-jobs-for-zowe-sdk": "^8.37.1",
+    "@zowe/zowe-explorer-api": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/vscode": "^1.89.0",
+    "typescript": "^5.3.3"
+  }
+}
