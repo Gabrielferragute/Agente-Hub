@@ -612,14 +612,6 @@ export function activate(context: vscode.ExtensionContext) {
             console.log(`SelectedSkill: ${result.skill}`);
             console.log(`ResourceReferenceFound: ${result.resourceType !== 'none' ? 'YES' : 'NO'}`);
             console.log(`ResourceType: ${result.resourceType}`);
-            let ds = '', mem = '';
-            if (result.dataset && result.dataset !== 'none' && result.dataset.includes('(')) {
-                const parts = result.dataset.split('(');
-                ds = parts[0];
-                mem = parts[1].replace(')', '');
-            }
-            console.log(`Dataset: ${ds}`);
-            console.log(`Member: ${mem}`);
             console.log(`ZoweReadAttempted: ${result.zoweReadAttempted ? 'YES' : 'NO'}`);
             console.log(`LLMCalled: ${result.llmCalled ? 'YES' : 'NO'}`);
             console.log(`----------------------------------\n`);
@@ -658,6 +650,24 @@ export function activate(context: vscode.ExtensionContext) {
                 if (res.routingDecisionSource !== undefined) telemetryPayload.routingDecisionSource = res.routingDecisionSource;
                 if (res.semanticRouterCalled !== undefined) telemetryPayload.semanticRouterCalled = res.semanticRouterCalled;
                 if (res.semanticRouterDurationMs !== undefined) telemetryPayload.semanticRouterDurationMs = res.semanticRouterDurationMs;
+                if (res.semanticSkillRequested !== undefined) telemetryPayload.semanticSkillRequested = res.semanticSkillRequested;
+                if (res.semanticSkillValid !== undefined) telemetryPayload.semanticSkillValid = res.semanticSkillValid;
+                if (res.editorContextRequested !== undefined) telemetryPayload.editorContextRequested = res.editorContextRequested;
+                if (res.editorContextIncluded !== undefined) telemetryPayload.editorContextIncluded = res.editorContextIncluded;
+                if (res.editorContextReason !== undefined) telemetryPayload.editorContextReason = res.editorContextReason;
+                if (res.contextBudgetTotalChars !== undefined) telemetryPayload.contextBudgetTotalChars = res.contextBudgetTotalChars;
+                if (res.contextCharsIncluded !== undefined) telemetryPayload.contextCharsIncluded = res.contextCharsIncluded;
+                if (res.knowledgeCharsIncluded !== undefined) telemetryPayload.knowledgeCharsIncluded = res.knowledgeCharsIncluded;
+                if (res.mainframeContextCharsIncluded !== undefined) telemetryPayload.mainframeContextCharsIncluded = res.mainframeContextCharsIncluded;
+                if (res.contextBudgetExceeded !== undefined) telemetryPayload.contextBudgetExceeded = res.contextBudgetExceeded;
+                if (res.knowledgeTruncated !== undefined) telemetryPayload.knowledgeTruncated = res.knowledgeTruncated;
+                if (res.mainframeContextTruncated !== undefined) telemetryPayload.mainframeContextTruncated = res.mainframeContextTruncated;
+                if (res.historyTruncationReason !== undefined) telemetryPayload.historyTruncationReason = res.historyTruncationReason;
+                if (res.knowledgeTruncationReason !== undefined) telemetryPayload.knowledgeTruncationReason = res.knowledgeTruncationReason;
+                if (res.mainframeContextTruncationReason !== undefined) telemetryPayload.mainframeContextTruncationReason = res.mainframeContextTruncationReason;
+                if (res.truncationReason !== undefined) telemetryPayload.truncationReason = res.truncationReason;
+                if (res.contextBuildSuccess !== undefined) telemetryPayload.contextBuildSuccess = res.contextBuildSuccess;
+                if (res.contextBuildFailureReason !== undefined) telemetryPayload.contextBuildFailureReason = res.contextBuildFailureReason;
             }
 
             logTelemetry(telemetryPayload);

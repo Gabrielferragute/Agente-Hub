@@ -19,6 +19,26 @@ export interface TelemetryEvent {
     routingDecisionSource?: 'CODE_CLASSIFIER' | 'EXPLICIT_INTENT' | 'SEMANTIC_ROUTER' | 'FALLBACK';
     semanticRouterCalled?: boolean;
     semanticRouterDurationMs?: number;
+    semanticSkillRequested?: string;
+    semanticSkillValid?: boolean;
+
+    editorContextRequested?: boolean;
+    editorContextIncluded?: boolean;
+    editorContextReason?: string;
+
+    contextBudgetTotalChars?: number;
+    contextCharsIncluded?: number;
+    knowledgeCharsIncluded?: number;
+    mainframeContextCharsIncluded?: number;
+    contextBudgetExceeded?: boolean;
+    knowledgeTruncated?: boolean;
+    mainframeContextTruncated?: boolean;
+    historyTruncationReason?: string;
+    knowledgeTruncationReason?: string;
+    mainframeContextTruncationReason?: string;
+    truncationReason?: string;
+    contextBuildSuccess?: boolean;
+    contextBuildFailureReason?: string;
 }
 
 export function logTelemetry(event: TelemetryEvent) {
@@ -43,8 +63,22 @@ export function logTelemetry(event: TelemetryEvent) {
     if (event.editorContextMode !== undefined) {
         console.log(`- Editor Context : Mode=${event.editorContextMode} | Found=${event.visibleEditorsFound} | Incl=${event.editorsIncluded}`);
     }
+    if (event.editorContextRequested !== undefined) {
+        console.log(`- Editor Policy  : Requested=${event.editorContextRequested ? 'YES' : 'NO'} | Included=${event.editorContextIncluded ? 'YES' : 'NO'} | Reason=${event.editorContextReason}`);
+    }
     if (event.routingDecisionSource !== undefined) {
         console.log(`- Routing Source : ${event.routingDecisionSource} | SemRouterCalled=${event.semanticRouterCalled ? 'YES' : 'NO'}` + (event.semanticRouterDurationMs ? ` | SemRouterMs=${event.semanticRouterDurationMs}` : ''));
+    }
+    if (event.semanticSkillRequested !== undefined) {
+        console.log(`- Semantic Skill : Requested=${event.semanticSkillRequested} | Valid=${event.semanticSkillValid ? 'YES' : 'NO'}`);
+    }
+    if (event.contextBudgetTotalChars !== undefined) {
+        console.log(`- Context Budget : Max=${event.contextBudgetTotalChars} | Included=${event.contextCharsIncluded} | History=${event.historyCharsIncluded} | Knowledge=${event.knowledgeCharsIncluded} | Mainframe=${event.mainframeContextCharsIncluded} | Exceeded=${event.contextBudgetExceeded ? 'YES' : 'NO'}`);
+        console.log(`- Truncated      : History=${event.historyTruncated ? 'YES' : 'NO'} | Knowledge=${event.knowledgeTruncated ? 'YES' : 'NO'} | Mainframe=${event.mainframeContextTruncated ? 'YES' : 'NO'}`);
+        console.log(`- Truncation     : History=${event.historyTruncationReason} | Knowledge=${event.knowledgeTruncationReason} | Mainframe=${event.mainframeContextTruncationReason} | Aggregate=${event.truncationReason}`);
+    }
+    if (event.contextBuildSuccess !== undefined) {
+        console.log(`- Context Build  : Success=${event.contextBuildSuccess ? 'YES' : 'NO'}` + (event.contextBuildFailureReason ? ` | FailureReason=${event.contextBuildFailureReason}` : ''));
     }
     
     console.log(`----------------------------------------`);

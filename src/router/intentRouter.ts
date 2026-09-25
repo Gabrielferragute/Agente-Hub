@@ -10,6 +10,15 @@ import { codeClassifier } from '../mainframe/codeClassifier';
 import { areaConfigManager } from '../mainframe/areaConfigManager';
 import { ComponentDiscoveryEngine } from '../mainframe/componentDiscovery/componentDiscoveryEngine';
 import { semanticRouter } from './semanticRouter';
+import { CodeClassification, CodeConfidence } from '../mainframe/codeClassificationTypes';
+import { shouldUseEditorContext, EditorContextReason } from '../context/editorContextPolicy';
+import { decideDeterministicRouting, RoutingDecisionSource, validateSemanticSkill } from './routingContracts';
+import {
+    BudgetHistoryMessage,
+    CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE,
+    ContextBudgetError,
+    TruncationReason
+} from '../context/contextBudget';
 
 export interface IntentRouterTelemetry {
     intent: string;
@@ -41,9 +50,27 @@ export interface IntentRouterTelemetry {
     editorContextMode?: 'ACTIVE_ONLY' | 'MULTI_VISIBLE' | 'NONE';
     visibleEditorsFound?: number;
     editorsIncluded?: number;
-    routingDecisionSource?: 'CODE_CLASSIFIER' | 'EXPLICIT_INTENT' | 'SEMANTIC_ROUTER' | 'FALLBACK';
+    routingDecisionSource?: RoutingDecisionSource;
     semanticRouterCalled?: boolean;
     semanticRouterDurationMs?: number;
+    semanticSkillRequested?: string;
+    semanticSkillValid?: boolean;
+    editorContextRequested?: boolean;
+    editorContextIncluded?: boolean;
+    editorContextReason?: EditorContextReason;
+    contextBudgetTotalChars?: number;
+    contextCharsIncluded?: number;
+    knowledgeCharsIncluded?: number;
+    mainframeContextCharsIncluded?: number;
+    contextBudgetExceeded?: boolean;
+    knowledgeTruncated?: boolean;
+    mainframeContextTruncated?: boolean;
+    historyTruncationReason?: TruncationReason;
+    knowledgeTruncationReason?: TruncationReason;
+    mainframeContextTruncationReason?: TruncationReason;
+    truncationReason?: TruncationReason;
+    contextBuildSuccess?: boolean;
+    contextBuildFailureReason?: typeof CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE;
 }
 
 let hasLoggedInventory = false;
@@ -66,7 +93,8 @@ export async function handleIntent(
     let skillId = 'unknown';
     let skillProvider = 'none';
     let detectedCodeType = 'unknown';
-    let codeTypeConfidence = 'none';
+    let codeTypeConfidence: CodeConfidence | 'NONE' = 'NONE';
+    let classification: CodeClassification = { detectedType: 'unknown', confidence: 'LOW', evidence: [] };
     let sourceChars = 0;
     let contextChars = 0;
     let zoweReadAttempted = false;
@@ -80,9 +108,15 @@ export async function handleIntent(
     let editorContextMode: 'ACTIVE_ONLY' | 'MULTI_VISIBLE' | 'NONE' = 'NONE';
     let visibleEditorsFound = 0;
     let editorsIncluded = 0;
-    let routingDecisionSource: 'CODE_CLASSIFIER' | 'EXPLICIT_INTENT' | 'SEMANTIC_ROUTER' | 'FALLBACK' = 'FALLBACK';
+    let routingDecisionSource: RoutingDecisionSource = 'FALLBACK';
     let semanticRouterCalled = false;
     let semanticRouterDurationMs = 0;
+    let semanticSkillRequested = 'none';
+    let semanticSkillValid = false;
+    const editorDecision = shouldUseEditorContext(request.prompt);
+    const editorContextRequested = editorDecision.requested;
+    let editorContextIncluded = false;
+    const editorContextReason: EditorContextReason = editorDecision.reason;
 
     // 1. DISCOVERY INTENT (Component Discovery Engine)
     if (userPrompt.includes('mapeie') || userPrompt.includes('impacto') || userPrompt.includes('relacionados')) {
@@ -168,7 +202,7 @@ export async function handleIntent(
         }
 
         // 1.C FALLBACK PARA ACTIVE EDITOR
-        if (!zoweContextResult) {
+        if (!zoweContextResult && editorContextRequested) {
             const activeEditor = vscode.window.activeTextEditor;
             const validEditors = vscode.window.visibleTextEditors.filter(e => e.document.uri.scheme !== 'output' && e.document.uri.scheme !== 'debug');
             visibleEditorsFound = validEditors.length;
@@ -193,19 +227,19 @@ export async function handleIntent(
                 if (editor && editor.document) {
                     const text = editor.document.getText();
                     if (text.trim().length > 0) {
-                        const fileName = path.basename(editor.document.fileName);
-                        stream.progress(`Lendo arquivo aberto no editor: ${fileName}...`);
+                        stream.progress('Lendo conteudo explicitamente solicitado do editor ativo...');
                         zoweContextResult = {
                             sourceType: 'member',
-                            sourceIdentifier: fileName,
+                            sourceIdentifier: 'active-editor',
                             content: text,
                             charsRetrieved: text.length,
                             charsSentToLlm: text.length,
                             truncated: false
                         };
                         resourceType = 'active-editor';
-                        dataset = fileName;
+                        dataset = 'active-editor';
                         editorsIncluded = 1;
+                        editorContextIncluded = true;
                     }
                 }
             }
@@ -219,22 +253,17 @@ export async function handleIntent(
             sourceChars = processedContext.originalChars;
             contextChars = processedContext.contextChars;
 
-            const classification = codeClassifier.classify(contextContent);
+            classification = codeClassifier.classify(contextContent);
             detectedCodeType = classification.detectedType;
             codeTypeConfidence = classification.confidence;
         }
 
         // 3. SKILL SELECTION
-        if (detectedCodeType === 'jcl' && codeTypeConfidence === 'HIGH') {
-            selectedSkillName = 'jeff-jcl';
-            routingDecisionSource = 'CODE_CLASSIFIER';
-        } else if (detectedCodeType === 'cobol' && codeTypeConfidence === 'HIGH') {
-            selectedSkillName = 'cobol-debug';
-            routingDecisionSource = 'CODE_CLASSIFIER';
-        } else if (detectedCodeType === 'unknown' && zoweContextResult) {
-            selectedSkillName = null;
-            routingDecisionSource = 'FALLBACK';
-        } else {
+        const deterministicDecision = decideDeterministicRouting(classification);
+        selectedSkillName = deterministicDecision.selectedSkill;
+        routingDecisionSource = deterministicDecision.source;
+
+        if (deterministicDecision.shouldCallSemantic) {
             // ROTEADOR SEMÂNTICO
             stream.progress('Classificando intenção via Roteador Semântico...');
             semanticRouterCalled = true;
@@ -243,21 +272,22 @@ export async function handleIntent(
             semanticRouterDurationMs = Date.now() - srStart;
             
             // Fail Closed: Nenhuma skill assumida silenciosamente se a confiança for baixa ou genérica
-            if (semanticResult.confidence === 'LOW' || semanticResult.selectedSkill === 'onboarding') {
-                selectedSkillName = null;
-                routingDecisionSource = 'FALLBACK';
-            } else {
-                selectedSkillName = semanticResult.selectedSkill;
-                routingDecisionSource = 'SEMANTIC_ROUTER';
-            }
-            
-            intent = semanticResult.selectedSkill;
-            console.log(`[SemanticRouter] Skill: ${semanticResult.selectedSkill} | Confiança: ${semanticResult.confidence} | ${semanticResult.reasoning}`);
+            const validation = await validateSemanticSkill(
+                semanticResult.selectedSkill,
+                semanticResult.confidence,
+                skillIdToValidate => skillManager.hasSkill(skillIdToValidate)
+            );
+            semanticSkillRequested = validation.requested;
+            semanticSkillValid = validation.valid;
+            selectedSkillName = validation.selectedSkill;
+            routingDecisionSource = validation.valid ? 'SEMANTIC_ROUTER' : 'FALLBACK';
+            intent = validation.selectedSkill ?? 'unknown';
+            console.log(`[SemanticRouter] Requested=${semanticSkillRequested} | Valid=${semanticSkillValid ? 'YES' : 'NO'} | Confidence=${semanticResult.confidence}`);
         }
     }
 
-    let finalPrompt = request.prompt;
-    let finalPromptChars = 0;
+    let skillInstructions = '';
+    let knowledgeContent = '';
     
     if (selectedSkillName) {
         const loadedSkill = await skillManager.loadSkill(selectedSkillName);
@@ -270,72 +300,27 @@ export async function handleIntent(
                 defaultTier = 'DEEP';
             }
 
-            systemPrompt = `[Meta-Contexto: Você está operando sob a skill '${selectedSkillName}']\n\n` + loadedSkill.content;
-            if (loadedSkill.knowledgeContent) {
-                systemPrompt += loadedSkill.knowledgeContent;
-            }
-            
+            skillInstructions = `[Meta-Contexto: skill '${selectedSkillName}']\n\n${loadedSkill.content}`;
+            knowledgeContent = loadedSkill.knowledgeContent || '';
             stream.progress(`Skill carregada: ${selectedSkillName} [via ${skillProvider}]...`);
-
-            if (processedContext) {
-                // Se tem contexto, usa o prompt builder
-                const buildResult = promptBuilder.buildFromSkillAndContext(
-                    loadedSkill,
-                    processedContext, 
-                    request.prompt
-                );
-                finalPrompt = buildResult.finalPrompt;
-                finalPromptChars = buildResult.metrics.finalPromptChars;
-            } else {
-                finalPromptChars = systemPrompt.length + request.prompt.length;
-            }
-        }
-    } else {
-        if (processedContext) {
-            // Comportamento neutro quando UNKNOWN
-            stream.progress('Classificação de código neutra. Nenhuma skill específica carregada.');
-            systemPrompt = "Você é o Mainframe Hub Assistant. O usuário forneceu um código desconhecido extraído do Mainframe. Analise-o da melhor forma possível.";
-            
-            const buildResult = promptBuilder.build({
-                skillInstructions: systemPrompt,
-                knowledge: '',
-                mainframeContext: processedContext.content,
-                userRequest: request.prompt
-            });
-            finalPrompt = buildResult.finalPrompt;
-            finalPromptChars = buildResult.metrics.finalPromptChars;
         } else {
-            finalPromptChars = systemPrompt.length + request.prompt.length;
+            selectedSkillName = null;
+            routingDecisionSource = 'FALLBACK';
+            semanticSkillValid = false;
         }
     }
 
-    // 4. MODEL SELECTION
-    const selectionResult = await selectModelByLevel(defaultTier, accessInfo);
-    let selectedModel = selectionResult.model;
-
-    // 5. INVOCAÇÃO DO LLM
-    // 5. INVOCAÇÃO DO LLM
-    const messages: vscode.LanguageModelChatMessage[] = [
-        vscode.LanguageModelChatMessage.User(systemPrompt)
-    ];
-
-    // Injeta o histórico da conversa para manter o contexto
-    let historyTruncated = false;
-    let historyMessagesAvailable = chatContext.history.length;
-    let historyMessagesToInclude = chatContext.history;
-    const maxHistoryMessages = 6; // PROVISIONAL
-    
-    if (chatContext.history.length > maxHistoryMessages) {
-        historyMessagesToInclude = chatContext.history.slice(-maxHistoryMessages);
-        historyTruncated = true;
+    if (!selectedSkillName && processedContext) {
+        stream.progress('Classificação neutra. Nenhuma skill específica carregada.');
+        systemPrompt = 'Você é o Mainframe Hub Assistant. Analise o contexto fornecido de forma neutra, sucinta e direta.';
     }
-    
-    let historyCharsIncluded = 0;
 
-    for (const turn of historyMessagesToInclude) {
+    // 4. CONTEXT BUILD
+    const historyMessagesAvailable = chatContext.history.length;
+    const historyInput: BudgetHistoryMessage[] = [];
+    for (const turn of chatContext.history) {
         if (turn instanceof vscode.ChatRequestTurn) {
-            messages.push(vscode.LanguageModelChatMessage.User(turn.prompt));
-            historyCharsIncluded += turn.prompt.length;
+            historyInput.push({ role: 'user', content: turn.prompt });
         } else if (turn instanceof vscode.ChatResponseTurn) {
             let responseText = '';
             for (const part of turn.response) {
@@ -343,13 +328,79 @@ export async function handleIntent(
                     responseText += part.value.value;
                 }
             }
-            messages.push(vscode.LanguageModelChatMessage.Assistant(responseText));
-            historyCharsIncluded += responseText.length;
+            if (responseText) historyInput.push({ role: 'assistant', content: responseText });
         }
     }
 
-    // Adiciona o prompt final da requisição atual
-    messages.push(vscode.LanguageModelChatMessage.User(finalPrompt));
+    let budgetedChat;
+    try {
+        budgetedChat = promptBuilder.buildBudgetedChat({
+            assistantInstructions: systemPrompt,
+            skillInstructions,
+            knowledge: knowledgeContent,
+            mainframeContext: processedContext?.content ?? '',
+            userRequest: request.prompt,
+            history: historyInput,
+            maxHistoryMessages: 6
+        });
+    } catch (error: unknown) {
+        if (!(error instanceof ContextBudgetError)) throw error;
+        stream.markdown('O contexto necessário para esta solicitação excede o limite atual. Reduza o conteúdo analisado ou selecione uma parte mais específica.');
+        return {
+            intent, resourceType, dataset, skill: skillId, skillProvider,
+            detectedCodeType, codeTypeConfidence,
+            requestedTier: defaultTier, effectiveTier: 'unknown',
+            selectedModelId: 'unknown', fallbackUsed: false,
+            zoweReadAttempted, llmCalled: false,
+            sourceChars, contextChars, finalPromptChars: 0,
+            responseChars: 0, durationMs: 0, success: false,
+            discoveryTelemetry,
+            historyMessagesAvailable,
+            historyMessagesIncluded: 0,
+            historyCharsIncluded: 0,
+            historyTruncated: false,
+            editorContextMode,
+            visibleEditorsFound,
+            editorsIncluded,
+            editorContextRequested,
+            editorContextIncluded,
+            editorContextReason,
+            routingDecisionSource,
+            semanticRouterCalled,
+            semanticRouterDurationMs,
+            semanticSkillRequested,
+            semanticSkillValid,
+            contextBudgetTotalChars: error.maxTotalChars,
+            contextCharsIncluded: 0,
+            knowledgeCharsIncluded: 0,
+            mainframeContextCharsIncluded: 0,
+            contextBudgetExceeded: true,
+            knowledgeTruncated: false,
+            mainframeContextTruncated: false,
+            historyTruncationReason: 'NONE',
+            knowledgeTruncationReason: 'NONE',
+            mainframeContextTruncationReason: 'NONE',
+            truncationReason: 'NONE',
+            contextBuildSuccess: false,
+            contextBuildFailureReason: error.code
+        };
+    }
+
+    // 5. MODEL SELECTION
+    const selectionResult = await selectModelByLevel(defaultTier, accessInfo);
+    const selectedModel = selectionResult.model;
+
+    // 6. INVOCACAO DO LLM
+    const messages: vscode.LanguageModelChatMessage[] = [
+        vscode.LanguageModelChatMessage.User(budgetedChat.systemMessage)
+    ];
+    for (const historyMessage of budgetedChat.history) {
+        messages.push(historyMessage.role === 'user'
+            ? vscode.LanguageModelChatMessage.User(historyMessage.content)
+            : vscode.LanguageModelChatMessage.Assistant(historyMessage.content));
+    }
+    messages.push(vscode.LanguageModelChatMessage.User(budgetedChat.currentUserMessage));
+    const finalPromptChars = budgetedChat.metrics.contextCharsIncluded;
 
     const startTime = Date.now();
     let responseChars = 0;
@@ -388,15 +439,32 @@ export async function handleIntent(
         success: llmSuccess,
         discoveryTelemetry,
         historyMessagesAvailable,
-        historyMessagesIncluded: historyMessagesToInclude.length,
-        historyCharsIncluded,
-        historyTruncated,
+        historyMessagesIncluded: budgetedChat.metrics.historyMessagesIncluded,
+        historyCharsIncluded: budgetedChat.metrics.historyCharsIncluded,
+        historyTruncated: budgetedChat.metrics.historyTruncated,
         editorContextMode,
         visibleEditorsFound,
         editorsIncluded,
+        editorContextRequested,
+        editorContextIncluded,
+        editorContextReason,
         routingDecisionSource,
         semanticRouterCalled,
-        semanticRouterDurationMs
+        semanticRouterDurationMs,
+        semanticSkillRequested,
+        semanticSkillValid,
+        contextBudgetTotalChars: budgetedChat.metrics.contextBudgetTotalChars,
+        contextCharsIncluded: budgetedChat.metrics.contextCharsIncluded,
+        knowledgeCharsIncluded: budgetedChat.metrics.knowledgeCharsIncluded,
+        mainframeContextCharsIncluded: budgetedChat.metrics.mainframeContextCharsIncluded,
+        contextBudgetExceeded: budgetedChat.metrics.contextBudgetExceeded,
+        knowledgeTruncated: budgetedChat.metrics.knowledgeTruncated,
+        mainframeContextTruncated: budgetedChat.metrics.mainframeContextTruncated,
+        historyTruncationReason: budgetedChat.metrics.historyTruncationReason,
+        knowledgeTruncationReason: budgetedChat.metrics.knowledgeTruncationReason,
+        mainframeContextTruncationReason: budgetedChat.metrics.mainframeContextTruncationReason,
+        truncationReason: budgetedChat.metrics.truncationReason,
+        contextBuildSuccess: true
     };
 }
 

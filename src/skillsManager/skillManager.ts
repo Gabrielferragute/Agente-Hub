@@ -24,6 +24,10 @@ export class SkillManager {
         }
         return null;
     }
+
+    async hasSkill(skillId: string): Promise<boolean> {
+        return (await this.loadSkill(skillId)) !== null;
+    }
 }
 
 // Singleton global
