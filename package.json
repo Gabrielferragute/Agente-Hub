@@ -75,7 +75,8 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "test:core": "npm run compile && node --test out/test/core-hardening.test.js"
   },
   "dependencies": {
     "@zowe/core-for-zowe-sdk": "^8.37.1",

@@ -23,6 +23,11 @@
 
 import { ProcessedContext } from './contextProcessor';
 import { LoadedSkill } from '../skillsManager/types';
+import {
+    BudgetedChat,
+    BudgetedChatInput,
+    buildBudgetedChat
+} from './contextBudget';
 
 // ════════════════════════════════════════════════════════════════
 // INTERFACES
@@ -59,6 +64,10 @@ export interface PromptMetrics {
 // ════════════════════════════════════════════════════════════════
 
 export class PromptBuilder {
+
+    buildBudgetedChat(input: BudgetedChatInput): BudgetedChat {
+        return buildBudgetedChat(input);
+    }
 
     /**
      * Monta o prompt final a partir das seções fornecidas.

@@ -1,8 +1,6 @@
-export interface CodeClassification {
-    detectedType: 'jcl' | 'cobol' | 'unknown';
-    confidence: 'high' | 'medium' | 'low';
-    evidence: string[];
-}
+import { CodeClassification } from './codeClassificationTypes';
+
+export { CodeClassification, CodeConfidence, CodeType } from './codeClassificationTypes';
 
 export class CodeClassifier {
     
@@ -29,7 +27,7 @@ export class CodeClassifier {
 
     public classify(content: string): CodeClassification {
         if (!content || content.trim() === '') {
-            return { detectedType: 'unknown', confidence: 'low', evidence: [] };
+            return { detectedType: 'unknown', confidence: 'LOW', evidence: [] };
         }
 
         // Limitamos a amostragem às primeiras 200 linhas para performance
@@ -57,24 +55,24 @@ export class CodeClassifier {
         }
 
         if (jclScore === 0 && cobolScore === 0) {
-            return { detectedType: 'unknown', confidence: 'low', evidence: [] };
+            return { detectedType: 'unknown', confidence: 'LOW', evidence: [] };
         }
 
         if (jclScore > cobolScore) {
             return {
                 detectedType: 'jcl',
-                confidence: jclScore >= 2 ? 'high' : 'medium',
+                confidence: jclScore >= 2 ? 'HIGH' : 'MEDIUM',
                 evidence: evidence.filter(e => this.jclPatterns.some(p => p.name === e))
             };
         } else if (cobolScore > jclScore) {
             return {
                 detectedType: 'cobol',
-                confidence: cobolScore >= 2 ? 'high' : 'medium',
+                confidence: cobolScore >= 2 ? 'HIGH' : 'MEDIUM',
                 evidence: evidence.filter(e => this.cobolPatterns.some(p => p.name === e))
             };
         } else {
             // Empate ou misto estranho
-            return { detectedType: 'unknown', confidence: 'low', evidence };
+            return { detectedType: 'unknown', confidence: 'LOW', evidence };
         }
     }
 }

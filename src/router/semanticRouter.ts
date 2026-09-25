@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
+import { CodeConfidence } from '../mainframe/codeClassificationTypes';
 
 export interface SemanticRouterResult {
     selectedSkill: string;
-    confidence: string;
+    confidence: CodeConfidence;
     reasoning: string;
 }
 
@@ -71,8 +72,8 @@ Não adicione explicações, comentários ou qualquer outro texto.`;
             }
 
             if (!classifierModel) {
-                console.log('[SemanticRouter] Nenhum modelo disponível para classificação. Usando fallback por keywords.');
-                return this.fallbackKeywordClassification(userPrompt);
+                console.log('[SemanticRouter] Nenhum modelo disponivel; modo neutro.');
+                return { selectedSkill: '', confidence: 'LOW', reasoning: 'Modelo semantico indisponivel.' };
             }
 
             const messages = [
@@ -92,7 +93,7 @@ Não adicione explicações, comentários ou qualquer outro texto.`;
             }
 
             // Parse da resposta: espera "SKILL:nome-da-skill"
-            const match = fullResponse.trim().match(/SKILL:\s*([a-z0-9-]+)/i);
+            const match = fullResponse.trim().match(/^SKILL:\s*([a-z0-9-]+)\s*$/i);
             if (match) {
                 const skillId = match[1].toLowerCase();
                 console.log(`[SemanticRouter] Classificação semântica: ${skillId}`);
@@ -103,52 +104,16 @@ Não adicione explicações, comentários ou qualquer outro texto.`;
                 };
             }
 
-            // Se o LLM retornou algo inesperado, tenta fallback
-            console.log(`[SemanticRouter] Resposta inesperada do LLM: "${fullResponse.trim()}". Usando fallback.`);
-            return this.fallbackKeywordClassification(userPrompt);
+            console.log('[SemanticRouter] Resposta fora do contrato; modo neutro.');
+            return { selectedSkill: '', confidence: 'LOW', reasoning: 'Resposta semantica fora do contrato.' };
 
-        } catch (error: any) {
-            console.error(`[SemanticRouter] Erro na classificação semântica: ${error.message}. Usando fallback.`);
-            return this.fallbackKeywordClassification(userPrompt);
+        } catch (error: unknown) {
+            const errorName = error instanceof Error ? error.name : 'Error';
+            console.error(`[SemanticRouter] Falha de classificacao (${errorName}); modo neutro.`);
+            return { selectedSkill: '', confidence: 'LOW', reasoning: 'Falha no roteador semantico.' };
         }
     }
 
-    /**
-     * Fallback baseado em keywords para quando o LLM não estiver disponível.
-     */
-    private fallbackKeywordClassification(userPrompt: string): SemanticRouterResult {
-        const prompt = userPrompt.toLowerCase();
-
-        const rules: Array<{ keywords: string[]; skill: string }> = [
-            { keywords: ['mapeie', 'impacto', 'relacionados', 'componentes'], skill: 'component-discovery' },
-            { keywords: ['sql', 'select', 'db2', 'query', 'where', 'index', 'sargable'], skill: 'jeff-db2' },
-            { keywords: ['dli', 'ims', 'cics', 'exec dli', 'cbltdli', 'dibstat'], skill: 'jeff-cics' },
-            { keywords: ['performance', 'mips', 'scan', 'otimizar', 'comp-3', 'search all'], skill: 'jeff-scan' },
-            { keywords: ['s0c7', 's0c4', 'abend', 'dump', 'erro cobol', 'debug'], skill: 'cobol-debug' },
-            { keywords: ['jcl', 'job', 'disp=', 'exec pgm', 'rlse', 'blksize'], skill: 'jeff-jcl' },
-            { keywords: ['tso', 'ispf', '3.4', 'zowe', 'compilar', 'criar', 'copiar', 'submit', 'uss'], skill: 'tso-to-zowe' },
-            { keywords: ['git', 'commit', 'branch', 'push'], skill: 'git-copilot' },
-            { keywords: ['começando', 'iniciante', 'como começo', 'primeiro'], skill: 'onboarding' },
-        ];
-
-        for (const rule of rules) {
-            for (const kw of rule.keywords) {
-                if (prompt.includes(kw)) {
-                    return {
-                        selectedSkill: rule.skill,
-                        confidence: 'MEDIUM',
-                        reasoning: `Fallback por keyword: "${kw}"`
-                    };
-                }
-            }
-        }
-
-        return {
-            selectedSkill: 'onboarding',
-            confidence: 'LOW',
-            reasoning: 'Nenhuma correspondência encontrada. Default: onboarding.'
-        };
-    }
 }
 
 export const semanticRouter = new SemanticRouter();
