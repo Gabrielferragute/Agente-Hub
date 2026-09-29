@@ -1,4 +1,5 @@
 import { zoweConnector } from '../../zowe/zoweConnector';
+import { ProfileSelectionContext } from '../../zowe/profileTypes';
 import { AreaConfig } from '../areaConfigManager';
 import { relationExtractor } from './relationExtractor';
 import { ComponentGraph, ComponentNode, ComponentRelation, ComponentType, DiscoveryTelemetry } from './types';
@@ -29,6 +30,7 @@ export class ComponentDiscoveryEngine {
     private discoveryTruncated = false;
 
     constructor(
+        private profileCtx: ProfileSelectionContext,
         private seedMember: string,
         private area: AreaConfig,
         private budget: SearchBudget = DEFAULT_BUDGET
@@ -79,7 +81,7 @@ export class ComponentDiscoveryEngine {
         }
 
         // Lê o conteúdo do Zowe
-        const zoweResult = await zoweConnector.readDatasetMember(library, member);
+        const zoweResult = await zoweConnector.readDatasetMember(this.profileCtx, library, member);
         if (zoweResult.error) return;
 
         this.charsRead += zoweResult.charsRetrieved;
@@ -134,7 +136,7 @@ export class ComponentDiscoveryEngine {
                         continue;
                     }
                     this.librariesConsulted++;
-                    const members = await zoweConnector.listDatasetMembers(lib);
+                    const members = await zoweConnector.listDatasetMembers(this.profileCtx, lib);
                     this.librariesCache.set(lib, members);
                 }
 

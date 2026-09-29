@@ -67,8 +67,31 @@
       {
         "command": "mainframeHub.testJclLlmPipeline",
         "title": "Mainframe Hub: Test JCL LLM Pipeline"
+      },
+      {
+        "command": "mainframeHub.pinProfile",
+        "title": "Mainframe Hub: Pin Zowe Profile"
+      },
+      {
+        "command": "mainframeHub.unpinProfile",
+        "title": "Mainframe Hub: Unpin Zowe Profile"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Mainframe Hub Assistant",
+      "properties": {
+        "mainframeHub.workspaceProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Nome do profile Zowe (zosmf) preferido para este workspace. Usado quando não há RESOURCE_CONTEXT nem profile pinnado na sessão."
+        },
+        "mainframeHub.workspaceProfileEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Habilita o uso do profile de workspace (mainframeHub.workspaceProfile) na cadeia de resolução."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -76,7 +99,9 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test:core": "npm run compile && node --test out/test/core-hardening.test.js"
+    "test:core": "npm run compile && node --test out/test/core-hardening.test.js",
+    "test:profile": "npm run compile && node --test out/test/profile-context.test.js",
+    "test:all": "npm run compile && node --test out/test/core-hardening.test.js out/test/profile-context.test.js"
   },
   "dependencies": {
     "@zowe/core-for-zowe-sdk": "^8.37.1",
