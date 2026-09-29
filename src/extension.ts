@@ -750,6 +750,11 @@ export function activate(context: vscode.ExtensionContext) {
                 if (res.truncationReason !== undefined) telemetryPayload.truncationReason = res.truncationReason;
                 if (res.contextBuildSuccess !== undefined) telemetryPayload.contextBuildSuccess = res.contextBuildSuccess;
                 if (res.contextBuildFailureReason !== undefined) telemetryPayload.contextBuildFailureReason = res.contextBuildFailureReason;
+                // H-02 Model Router
+                if (res.tierSelectionReason !== undefined) telemetryPayload.tierSelectionReason = res.tierSelectionReason;
+                if (res.tierEscalated !== undefined) telemetryPayload.tierEscalated = res.tierEscalated;
+                if (res.tierOriginal !== undefined) telemetryPayload.tierOriginal = res.tierOriginal;
+                if (res.tierSelectionDetails !== undefined) telemetryPayload.tierSelectionDetails = res.tierSelectionDetails;
             }
 
             logTelemetry(telemetryPayload);

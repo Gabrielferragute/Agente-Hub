@@ -101,7 +101,8 @@
     "lint": "eslint src --ext ts",
     "test:core": "npm run compile && node --test out/test/core-hardening.test.js",
     "test:profile": "npm run compile && node --test out/test/profile-context.test.js",
-    "test:all": "npm run compile && node --test out/test/core-hardening.test.js out/test/profile-context.test.js"
+    "test:model-router": "npm run compile && node --test out/test/model-router.test.js",
+    "test:all": "npm run compile && node --test out/test/core-hardening.test.js out/test/profile-context.test.js out/test/model-router.test.js"
   },
   "dependencies": {
     "@zowe/core-for-zowe-sdk": "^8.37.1",
