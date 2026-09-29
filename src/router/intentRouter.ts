@@ -15,6 +15,7 @@ import { semanticRouter } from './semanticRouter';
 import { CodeClassification, CodeConfidence } from '../mainframe/codeClassificationTypes';
 import { shouldUseEditorContext, EditorContextReason } from '../context/editorContextPolicy';
 import { decideDeterministicRouting, RoutingDecisionSource, validateSemanticSkill } from './routingContracts';
+import { selectTier, TierSelectionResult } from './tierSelector';
 import {
     BudgetHistoryMessage,
     CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE,
@@ -73,6 +74,12 @@ export interface IntentRouterTelemetry {
     truncationReason?: TruncationReason;
     contextBuildSuccess?: boolean;
     contextBuildFailureReason?: typeof CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE;
+
+    // Métricas H-02 Model Router (Tier Selection)
+    tierSelectionReason?: string;
+    tierEscalated?: boolean;
+    tierOriginal?: string | null;
+    tierSelectionDetails?: string;
 }
 
 let hasLoggedInventory = false;
@@ -86,6 +93,7 @@ export async function handleIntent(
 ): Promise<IntentRouterTelemetry> {
     
     let defaultTier = 'ECONOMY';
+    let tierSelectionResult: TierSelectionResult | null = null;
     let systemPrompt = 'Você é o Mainframe Hub Assistant. Ajude de forma sucinta e direta.';
     const userPrompt = request.prompt.toLowerCase();
     
@@ -302,10 +310,8 @@ export async function handleIntent(
             skillId = loadedSkill.id || 'unknown';
             skillProvider = loadedSkill.providerId || 'local';
             defaultTier = loadedSkill.defaultTier || 'ECONOMY';
-            
-            if (defaultTier === 'STANDARD' && (userPrompt.includes('dump') || userPrompt.includes('vários arquivos'))) {
-                defaultTier = 'DEEP';
-            }
+
+            // H-02: O tierSelector determinará o tier final. Removido o if manual de escalação.
 
             skillInstructions = `[Meta-Contexto: skill '${selectedSkillName}']\n\n${loadedSkill.content}`;
             knowledgeContent = loadedSkill.knowledgeContent || '';
@@ -393,7 +399,20 @@ export async function handleIntent(
         };
     }
 
-    // 5. MODEL SELECTION
+    // 5. MODEL SELECTION (H-02 Model Router)
+    tierSelectionResult = selectTier({
+        intent,
+        selectedSkill: selectedSkillName,
+        detectedCodeType,
+        codeTypeConfidence,
+        userPrompt,
+        contextChars,
+        zoweReadAttempted,
+        skillDefaultTier: defaultTier
+    });
+    defaultTier = tierSelectionResult.tier;
+    console.log(`[TierSelector] Tier=${tierSelectionResult.tier} | Reason=${tierSelectionResult.reason} | Escalated=${tierSelectionResult.escalated} | Details=${tierSelectionResult.details}`);
+
     const selectionResult = await selectModelByLevel(defaultTier, accessInfo);
     const selectedModel = selectionResult.model;
 
@@ -471,7 +490,11 @@ export async function handleIntent(
         knowledgeTruncationReason: budgetedChat.metrics.knowledgeTruncationReason,
         mainframeContextTruncationReason: budgetedChat.metrics.mainframeContextTruncationReason,
         truncationReason: budgetedChat.metrics.truncationReason,
-        contextBuildSuccess: true
+        contextBuildSuccess: true,
+        tierSelectionReason: tierSelectionResult?.reason,
+        tierEscalated: tierSelectionResult?.escalated,
+        tierOriginal: tierSelectionResult?.originalTier,
+        tierSelectionDetails: tierSelectionResult?.details
     };
 }
 
