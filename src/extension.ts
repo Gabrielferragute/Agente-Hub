@@ -755,6 +755,9 @@ export function activate(context: vscode.ExtensionContext) {
                 if (res.tierEscalated !== undefined) telemetryPayload.tierEscalated = res.tierEscalated;
                 if (res.tierOriginal !== undefined) telemetryPayload.tierOriginal = res.tierOriginal;
                 if (res.tierSelectionDetails !== undefined) telemetryPayload.tierSelectionDetails = res.tierSelectionDetails;
+                // H-03 Migration Knowledge Selector
+                if (res.dynamicKnowledgeFilesIncluded !== undefined) telemetryPayload.dynamicKnowledgeFilesIncluded = res.dynamicKnowledgeFilesIncluded;
+                if (res.dynamicKnowledgeReasons !== undefined) telemetryPayload.dynamicKnowledgeReasons = res.dynamicKnowledgeReasons;
             }
 
             logTelemetry(telemetryPayload);

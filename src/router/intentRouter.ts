@@ -16,6 +16,7 @@ import { CodeClassification, CodeConfidence } from '../mainframe/codeClassificat
 import { shouldUseEditorContext, EditorContextReason } from '../context/editorContextPolicy';
 import { decideDeterministicRouting, RoutingDecisionSource, validateSemanticSkill } from './routingContracts';
 import { selectTier, TierSelectionResult } from './tierSelector';
+import { selectMigrationKnowledge } from '../knowledge/knowledgeSelector';
 import {
     BudgetHistoryMessage,
     CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE,
@@ -80,6 +81,10 @@ export interface IntentRouterTelemetry {
     tierEscalated?: boolean;
     tierOriginal?: string | null;
     tierSelectionDetails?: string;
+
+    // Métricas H-03 Migration Knowledge Selector
+    dynamicKnowledgeFilesIncluded?: number;
+    dynamicKnowledgeReasons?: string;
 }
 
 let hasLoggedInventory = false;
@@ -328,6 +333,29 @@ export async function handleIntent(
         systemPrompt = 'Você é o Mainframe Hub Assistant. Analise o contexto fornecido de forma neutra, sucinta e direta.';
     }
 
+    // FASE 3: MIGRATION KNOWLEDGE SELECTOR
+    const migrationKnowledge = selectMigrationKnowledge({
+        intent,
+        selectedSkill: selectedSkillName,
+        detectedCodeType,
+        userPrompt
+    });
+
+    if (migrationKnowledge.filePaths.length > 0) {
+        knowledgeContent += '\n\n--- DOCUMENTAÇÃO DE MIGRAÇÃO INJETADA DINAMICAMENTE ---\n';
+        for (const kPath of migrationKnowledge.filePaths) {
+            if (fs.existsSync(kPath)) {
+                const basename = path.basename(kPath);
+                knowledgeContent += `\n\n--- REFERÊNCIA: ${basename} ---\n`;
+                knowledgeContent += fs.readFileSync(kPath, 'utf8');
+            }
+        }
+        if (migrationKnowledge.reasons.length > 0) {
+            console.log(`[KnowledgeSelector] Reasons: ${migrationKnowledge.reasons.join(' | ')}`);
+            stream.progress(`Injetando guias de migração adicionais...`);
+        }
+    }
+
     // 4. CONTEXT BUILD
     const historyMessagesAvailable = chatContext.history.length;
     const historyInput: BudgetHistoryMessage[] = [];
@@ -494,7 +522,9 @@ export async function handleIntent(
         tierSelectionReason: tierSelectionResult?.reason,
         tierEscalated: tierSelectionResult?.escalated,
         tierOriginal: tierSelectionResult?.originalTier,
-        tierSelectionDetails: tierSelectionResult?.details
+        tierSelectionDetails: tierSelectionResult?.details,
+        dynamicKnowledgeFilesIncluded: migrationKnowledge.filePaths.length,
+        dynamicKnowledgeReasons: migrationKnowledge.reasons.join(' | ')
     };
 }
 
