@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { zoweConnector } from '../zowe/zoweConnector';
+import { profileResolver } from '../zowe/profileResolver';
+import { ProfileSelectionContext } from '../zowe/profileTypes';
 import { parseResourceReference } from '../mainframe/resourceParser';
 import { contextProcessor } from '../context/contextProcessor';
 import { promptBuilder } from '../context/promptBuilder';
@@ -139,7 +141,9 @@ export async function handleIntent(
 
         if (areaConfig && seedMember) {
             stream.progress(`Iniciando Discovery Engine para ${seedMember} na área ${areaConfig.displayName}...`);
-            const engine = new ComponentDiscoveryEngine(seedMember.toUpperCase(), areaConfig);
+            // Resolve profile UMA VEZ para toda a operação de discovery
+            const discoveryProfileCtx = await profileResolver.resolveProfile();
+            const engine = new ComponentDiscoveryEngine(discoveryProfileCtx, seedMember.toUpperCase(), areaConfig);
             const { graph, telemetry } = await engine.discover();
             
             // Serializa o grafo para jogar no contexto do LLM
@@ -182,7 +186,10 @@ export async function handleIntent(
 
             stream.progress(`Buscando conteúdo de ${dataset} via Zowe Explorer...`);
             zoweReadAttempted = true;
-            const zoweResult = await zoweConnector.readDatasetMember(parsed.dataset, parsed.member);
+
+            // Resolve profile UMA VEZ para toda a operação
+            const profileCtx = await profileResolver.resolveProfile();
+            const zoweResult = await zoweConnector.readDatasetMember(profileCtx, parsed.dataset, parsed.member);
 
             if (zoweResult.error) {
                 stream.markdown(`Não consegui acessar ${dataset}. Verifique se o dataset/member existe e se o seu profile Zowe possui acesso.`);

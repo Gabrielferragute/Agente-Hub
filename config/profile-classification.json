@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "description": "Mapeamento explícito de profiles Zowe para EnvironmentClass.",
+    "rules": [
+      "A classificação NÃO é inferida pelo nome, host, endereço ou HLQ.",
+      "Profiles não listados aqui são classificados como UNKNOWN.",
+      "Para classificar um profile como PROD, o responsável deve adicioná-lo explicitamente.",
+      "Valores válidos: DEV, TEST, PROD.",
+      "Se este arquivo não existir ou tiver erro de parsing, todos os profiles são UNKNOWN."
+    ]
+  },
+  "profiles": {}
+}

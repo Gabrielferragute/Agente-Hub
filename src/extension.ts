@@ -6,6 +6,14 @@ import { discoverModels } from './router/modelDiscovery';
 import { runZoweSpike } from './zowe/zoweSpike';
 
 import { zoweConnector } from './zowe/zoweConnector';
+import { profileResolver } from './zowe/profileResolver';
+import { profilePinningManager } from './zowe/profilePinning';
+import {
+    AmbiguousProfileError,
+    NoProfileAvailableError,
+    ProductionAccessDeniedError,
+    ProfileNotFoundError
+} from './zowe/profileTypes';
 
 import { contextProcessor } from './context/contextProcessor';
 import { promptBuilder } from './context/promptBuilder';
@@ -18,6 +26,52 @@ export function activate(context: vscode.ExtensionContext) {
         .catch(err => {
             console.error('Falha na inicialização de background (Models ou Zowe):', err);
         });
+
+    // ════════════════════════════════════════════════════════════════
+    // COMANDOS DE PROFILE PINNING
+    // ════════════════════════════════════════════════════════════════
+
+    const pinProfileCmd = vscode.commands.registerCommand('mainframeHub.pinProfile', async () => {
+        const available = profileResolver.getAvailableProfiles();
+        if (available.length === 0) {
+            vscode.window.showWarningMessage('Nenhum profile Zowe (zosmf) encontrado.');
+            return;
+        }
+
+        const selected = await vscode.window.showQuickPick(
+            available.map(name => ({
+                label: name,
+                description: profileResolver.getEnvironmentClass(name) !== 'UNKNOWN'
+                    ? `[${profileResolver.getEnvironmentClass(name)}]`
+                    : '[Não classificado]'
+            })),
+            {
+                placeHolder: 'Selecione o profile para fixar na sessão',
+                title: 'Mainframe Hub — Pin Profile'
+            }
+        );
+
+        if (selected) {
+            profilePinningManager.pinProfile(selected.label);
+            vscode.window.showInformationMessage(`Profile "${selected.label}" fixado na sessão.`);
+        }
+    });
+    context.subscriptions.push(pinProfileCmd);
+
+    const unpinProfileCmd = vscode.commands.registerCommand('mainframeHub.unpinProfile', async () => {
+        const current = profilePinningManager.getPinnedProfile();
+        if (current) {
+            profilePinningManager.unpinProfile();
+            vscode.window.showInformationMessage(`Profile "${current}" desafixado.`);
+        } else {
+            vscode.window.showInformationMessage('Nenhum profile fixado na sessão.');
+        }
+    });
+    context.subscriptions.push(unpinProfileCmd);
+
+    // ════════════════════════════════════════════════════════════════
+    // COMANDOS DE TESTE
+    // ════════════════════════════════════════════════════════════════
 
     // Comando de Teste Isolado do Zowe (Sem LLM)
     const testZoweCmd = vscode.commands.registerCommand('mainframeHub.testZoweReadOnly', async () => {
@@ -39,24 +93,40 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        console.log(`\n--- TESTE ISOLADO ZOWE: readDatasetMember ---`);
-        
-        const startTime = Date.now();
-        const result = await zoweConnector.readDatasetMember(ds, mem);
-        const durationMs = Date.now() - startTime;
-        
-        console.log(`Operation: readDatasetMember`);
-        console.log(`Dataset: ${result.sourceIdentifier}`);
-        console.log(`Success: ${result.error ? 'NO' : 'YES'}`);
-        console.log(`DurationMs: ${durationMs}`);
-        console.log(`CharsRetrieved: ${result.charsRetrieved}`);
-        console.log(`Truncated: ${result.truncated ? 'YES' : 'NO'}`);
-        console.log(`Provider: zosmf`);
-        
-        if (result.error) {
-            console.log(`Error: ${result.error}`);
+        try {
+            // Resolve profile UMA VEZ para toda a operação
+            const profileCtx = await profileResolver.resolveProfile();
+
+            console.log(`\n--- TESTE ISOLADO ZOWE: readDatasetMember ---`);
+            console.log(`Profile: ${profileCtx.profileName}`);
+            console.log(`Environment: ${profileCtx.environmentClass}`);
+            console.log(`Source: ${profileCtx.source}`);
+            
+            const startTime = Date.now();
+            const result = await zoweConnector.readDatasetMember(profileCtx, ds, mem);
+            const durationMs = Date.now() - startTime;
+            
+            console.log(`Operation: readDatasetMember`);
+            console.log(`Dataset: ${result.sourceIdentifier}`);
+            console.log(`Success: ${result.error ? 'NO' : 'YES'}`);
+            console.log(`DurationMs: ${durationMs}`);
+            console.log(`CharsRetrieved: ${result.charsRetrieved}`);
+            console.log(`Truncated: ${result.truncated ? 'YES' : 'NO'}`);
+            
+            if (result.error) {
+                console.log(`Error: ${result.error}`);
+            }
+            console.log(`---------------------------------------------\n`);
+        } catch (error) {
+            if (error instanceof NoProfileAvailableError ||
+                error instanceof AmbiguousProfileError ||
+                error instanceof ProductionAccessDeniedError ||
+                error instanceof ProfileNotFoundError) {
+                vscode.window.showWarningMessage(error.message);
+            } else {
+                vscode.window.showErrorMessage(`Erro inesperado: ${error instanceof Error ? error.message : String(error)}`);
+            }
         }
-        console.log(`---------------------------------------------\n`);
     });
     context.subscriptions.push(testZoweCmd);
 
@@ -80,8 +150,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
+        // Etapa 0: Resolve profile UMA VEZ para toda a operação
+        const profileCtx = await profileResolver.resolveProfile();
+
         // Etapa 1: Ler do Mainframe via zoweConnector (read-only)
-        const zoweResult = await zoweConnector.readDatasetMember(ds, mem);
+        const zoweResult = await zoweConnector.readDatasetMember(profileCtx, ds, mem);
 
         // Etapa 2: Processar contexto (sem LLM, sem log de conteúdo)
         const { context: processed, metrics } = contextProcessor.process(zoweResult);
@@ -120,8 +193,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
+        // Etapa 0: Resolve profile UMA VEZ para toda a operação
+        const profileCtx = await profileResolver.resolveProfile();
+
         // Etapa 1: Ler do Mainframe via zoweConnector (read-only)
-        const zoweResult = await zoweConnector.readDatasetMember(ds, mem);
+        const zoweResult = await zoweConnector.readDatasetMember(profileCtx, ds, mem);
         if (zoweResult.error) {
             console.log(`\n--- TESTE JCL SKILL PIPELINE ---`);
             console.log(`Dataset: ${zoweResult.sourceIdentifier}`);
@@ -302,8 +378,11 @@ export function activate(context: vscode.ExtensionContext) {
         // Simulação do user prompt
         const userPrompt = 'analise este jcl e identifique possíveis problemas';
 
+        // 0. Resolve profile UMA VEZ para toda a operação
+        const profileCtx = await profileResolver.resolveProfile();
+
         // 1. Zowe Read-Only
-        const zoweResult = await zoweConnector.readDatasetMember(ds, mem);
+        const zoweResult = await zoweConnector.readDatasetMember(profileCtx, ds, mem);
         if (zoweResult.error) {
             console.log(`\n--- TESTE JCL ROUTER PIPELINE ---`);
             console.log(`Success: NO`);
@@ -436,8 +515,11 @@ export function activate(context: vscode.ExtensionContext) {
         // Simulação do user prompt
         const userPrompt = 'Analise este JCL e explique de forma objetiva o que ele faz. Aponte também possíveis problemas ou pontos de atenção.';
 
+        // 0. Resolve profile UMA VEZ para toda a operação
+        const profileCtx = await profileResolver.resolveProfile();
+
         // 1. Zowe Read-Only
-        const zoweResult = await zoweConnector.readDatasetMember(ds, mem);
+        const zoweResult = await zoweConnector.readDatasetMember(profileCtx, ds, mem);
         if (zoweResult.error) {
             console.log(`\n--- TESTE JCL LLM PIPELINE ---`);
             console.log(`Success: NO`);
