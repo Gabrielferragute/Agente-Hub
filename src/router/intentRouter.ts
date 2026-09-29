@@ -89,6 +89,17 @@ export interface IntentRouterTelemetry {
 
 let hasLoggedInventory = false;
 
+// ════════════════════════════════════════════════════════════════
+// STICKY CONTEXT (Memória de Estado da Sessão)
+// ════════════════════════════════════════════════════════════════
+interface StickyContext {
+    datasetMember: string;
+    zoweResult: any; // ZoweContextResult
+    timestamp: number;
+}
+let currentStickyContext: StickyContext | null = null;
+const STICKY_TIMEOUT_MS = 1000 * 60 * 30; // 30 minutos de memória
+
 export async function handleIntent(
     request: vscode.ChatRequest,
     chatContext: vscode.ChatContext,
@@ -191,6 +202,21 @@ export async function handleIntent(
     } else {
         // 1.B RESOURCE PARSING & EXTRACTION (Agnóstico a Skill)
         const parsed = parseResourceReference(request.prompt);
+        let stickyUsed = false;
+
+        // Se não achou um recurso explícito no prompt, tenta recuperar do Sticky Context
+        if (!parsed && currentStickyContext && (Date.now() - currentStickyContext.timestamp < STICKY_TIMEOUT_MS)) {
+            const lowerPrompt = request.prompt.toLowerCase();
+            // Heurística leve para saber se o usuário está se referindo a código/programa/job
+            if (lowerPrompt.includes('este') || lowerPrompt.includes('programa') || lowerPrompt.includes('código') || lowerPrompt.includes('job') || lowerPrompt.includes('altere') || lowerPrompt.includes('adicione')) {
+                stream.progress(`Restaurando contexto da memória: ${currentStickyContext.datasetMember}...`);
+                zoweContextResult = currentStickyContext.zoweResult;
+                dataset = currentStickyContext.datasetMember;
+                resourceType = 'dataset-member';
+                intent = 'analyze-code';
+                stickyUsed = true;
+            }
+        }
 
         if (parsed && parsed.dataset && parsed.member) {
             resourceType = 'dataset-member';
@@ -219,6 +245,13 @@ export async function handleIntent(
             }
 
             zoweContextResult = zoweResult;
+            
+            // Atualiza a memória (Sticky Context) para a próxima iteração
+            currentStickyContext = {
+                datasetMember: dataset,
+                zoweResult: zoweResult,
+                timestamp: Date.now()
+            };
         }
 
         // 1.C FALLBACK PARA ACTIVE EDITOR

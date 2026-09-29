@@ -6,10 +6,10 @@ export interface ContextBudget {
 }
 
 export const PROVISIONAL_CONTEXT_BUDGET: ContextBudget = {
-    maxTotalChars: 24_000,
-    maxHistoryChars: 4_000,
-    maxMainframeChars: 8_000,
-    maxKnowledgeChars: 6_000
+    maxTotalChars: 64_000,
+    maxHistoryChars: 8_000,
+    maxMainframeChars: 40_000,
+    maxKnowledgeChars: 12_000
 };
 
 export const CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE = 'CONTEXT_MANDATORY_ENVELOPE_TOO_LARGE' as const;

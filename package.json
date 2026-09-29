@@ -1,6 +1,7 @@
 {
   "name": "mainframe-hub-assistant",
   "displayName": "Mainframe Hub Assistant",
+  "publisher": "mainframe-hub",
   "description": "Uma camada inteligente de suporte à migração TSO -> VS Code e desenvolvimento Mainframe.",
   "version": "0.1.0",
   "engines": {
@@ -95,6 +96,7 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
+    "package": "vsce package",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
@@ -115,6 +117,7 @@
   "devDependencies": {
     "@types/node": "18.x",
     "@types/vscode": "^1.89.0",
+    "@vscode/vsce": "^3.2.2",
     "typescript": "^5.3.3"
   }
 }
