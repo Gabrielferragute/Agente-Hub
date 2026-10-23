@@ -1,0 +1,16 @@
+{
+  "id": "example-area",
+  "displayName": "Example Area (Placeholder)",
+  "libraries": {
+    "programs": ["SYS1.PLACEHOLDER.COBOL", "SYS2.PLACEHOLDER.COBOL"],
+    "copybooks": ["SYS1.PLACEHOLDER.COPYLIB"],
+    "jcl": ["SYS1.PLACEHOLDER.JCL"],
+    "procs": ["SYS1.PLACEHOLDER.PROCLIB"]
+  },
+  "patterns": {
+    "programs": ["ABC*", "XYZ*"],
+    "copybooks": ["CPY*"],
+    "jcl": ["JABC*"],
+    "procs": ["PABC*"]
+  }
+}

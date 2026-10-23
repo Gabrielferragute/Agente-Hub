@@ -1,0 +1,24 @@
+node_modules/
+out/
+.vscode-test/
+*.vsix
+.DS_Store
+
+# ------------------------------------------------------------------
+# Conteúdo privado / corporativo — NUNCA versionar
+# ------------------------------------------------------------------
+# Fontes COBOL/JCL reais usados localmente no benchmark
+Programas/
+Correção/
+Correcao/
+
+# Capturas de tela (podem conter datasets, jobs e usuários reais)
+*.png
+!icon.png
+
+# Credenciais e configs locais do Zowe
+.env
+.env.*
+zowe.config.json
+zowe.config.user.json
+.zowe/

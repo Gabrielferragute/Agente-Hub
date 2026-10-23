@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Guia genérico para configuração do VS Code, Zowe Explorer, proxy e GitHub Copilot em ambiente corporativo">
+    <title>Guia Genérico de Conexão Zowe & Hub de IA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="app-header">
+        <div class="header-left">
+            <button id="menu-toggle" class="menu-btn" aria-label="Abrir menu de navegação">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <h1 class="logo">Guia Conexão Zowe & Hub de IA</h1>
+        </div>
+        <div class="header-right">
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Buscar no tutorial..." aria-label="Buscar no tutorial">
+            </div>
+            <div class="progress-wrapper" aria-label="Progresso do tutorial">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH RESULTS OVERLAY -->
+    <div class="search-results" id="search-results" hidden>
+        <div class="search-results-inner">
+            <h3>Resultados da Busca</h3>
+            <ul id="search-results-list"></ul>
+            <button class="search-close-btn" id="search-close">Fechar</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <nav class="toc" aria-label="Navegação do tutorial">
+                <h2>Conteúdo</h2>
+                <ul id="toc-list">
+                    <li><a href="#introducao" class="nav-link active">Introdução e Visão Geral</a></li>
+                    <li>
+                        <a href="#preparacao" class="nav-link">Preparação do Ambiente</a>
+                        <ul>
+                            <li><a href="#passo-1" class="nav-link sub-link">1. Instalação VS Code</a></li>
+                            <li><a href="#passo-2" class="nav-link sub-link">2. Acesso Corporativo ao Zowe</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="#configuracao-zowe" class="nav-link">Configuração do Zowe</a>
+                        <ul>
+                            <li><a href="#passo-3" class="nav-link sub-link">3. Extensão e Arquivos</a></li>
+                            <li><a href="#passo-4" class="nav-link sub-link">4. Autenticação</a></li>
+                            <li><a href="#ref-bibliotecas" class="nav-link sub-link">Ref. de Bibliotecas</a></li>
+                            <li><a href="#passo-5" class="nav-link sub-link">5. Ajuste de Proxy</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#extensoes" class="nav-link">Extensões VSIX</a></li>
+                    <li>
+                        <a href="#copilot" class="nav-link">GitHub Copilot</a>
+                        <ul>
+                            <li><a href="#passo-7" class="nav-link sub-link">7. Solicitação de Acesso</a></li>
+                            <li><a href="#passo-8" class="nav-link sub-link">8. Autenticação Business</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#conclusao" class="nav-link">Conclusão</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- OVERLAY para fechar sidebar no mobile -->
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <div class="content-wrapper" id="content-wrapper">
+
+                <!-- ============================================================= -->
+                <!-- INTRODUÇÃO E VISÃO GERAL -->
+                <!-- ============================================================= -->
+                <section id="introducao" class="content-section active">
+                    <h1>Manual Simplificado: Conexão Zowe & Hub de IA</h1>
+                    <p class="lead">Guia prático: VS Code, Extensão Zowe, Proxy, Hub de IA e GitHub Copilot.</p>
+
+                    <div class="alert info">
+                        <strong>Objetivo:</strong> Fornecer um guia passo a passo completo para instalação e configuração do seu ambiente de desenvolvimento integrado para suporte aos plugins Zowe, MF Helper e HUB de IA.
+                    </div>
+
+                    <h2>Visão geral do processo</h2>
+                    <p>O processo completo é composto por <strong>8 etapas</strong> sequenciais:</p>
+                    <div class="steps-grid">
+                        <div class="step-card">
+                            <span class="step-num">01</span>
+                            <h3>VS Code</h3>
+                            <p>Instalação</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">02</span>
+                            <h3>Portal de Acessos</h3>
+                            <p>Habilitação de acesso</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">03</span>
+                            <h3>Extensão Zowe</h3>
+                            <p>Configuração e arquivos</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">04</span>
+                            <h3>Credenciais Zowe</h3>
+                            <p>Chave M e Senha</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">05</span>
+                            <h3>Ajuste Proxy</h3>
+                            <p>URL</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">06</span>
+                            <h3>Extensões VSIX</h3>
+                            <p>MF Helper, Hub de IA, GIT</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">07</span>
+                            <h3>GitHub Copilot</h3>
+                            <p>Licenciamento</p>
+                        </div>
+                        <div class="step-card">
+                            <span class="step-num">08</span>
+                            <h3>Conectando o Copilot</h3>
+                            <p>Autenticação no VS Code</p>
+                        </div>
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button class="btn next-btn" data-target="preparacao">Próxima Etapa ➔</button>
+                    </div>
+                </section>
+
+                <!-- ============================================================= -->
+                <!-- PREPARAÇÃO DO AMBIENTE -->
+                <!-- ============================================================= -->
+                <section id="preparacao" class="content-section">
+                    <h1>Preparação do Ambiente</h1>
+
+                    <h2 id="passo-1">Passo 1: Instalação Visual Studio Code</h2>
+                    <p>O VS Code servirá como a IDE padrão para suporte aos plugins Zowe, MF Helper e HUB de IA.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Acesso ao Portal da Empresa:</strong> Entre no portal corporativo a partir da sua estação de trabalho.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Pesquisa e Instalação:</strong> Pesquise pelo aplicativo <code>VS CODE</code> (Visual Studio Code) e clique em instalar.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg4_xref33.png" alt="Portal da empresa com resultado de pesquisa para Visual Studio Code" class="step-image clickable-img">
+                        <figcaption>Portal da empresa — pesquisa e instalação do VS Code</figcaption>
+                    </figure>
+
+                    <hr>
+
+                    <h2 id="passo-2">Passo 2: Habilitação de Acesso ao Zowe</h2>
+                    <p>Para utilizar o Zowe, solicite acesso com o identificador corporativo <code>&lt;userid&gt;</code>.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Abertura da solicitação:</strong> Acesse <strong>&lt;corporate-access-portal&gt;</strong> para solicitar acesso para <code>&lt;userid&gt;</code>.
+                        </div>
+                    </div>
+
+                    <div class="alert important">
+                        <strong>Preencha os campos exatamente como abaixo:</strong>
+                        <ul class="clean-list">
+                            <li><strong>Categoria de Serviço:</strong> <code>&lt;service-category&gt;</code></li>
+                            <li><strong>Tipo de Solicitação:</strong> <code>&lt;request-type&gt;</code></li>
+                            <li><strong>Ambiente:</strong> <code>&lt;environment&gt;</code></li>
+                            <li><strong>Descrição:</strong> <code>&lt;approved-request-wording-for-userid&gt;</code></li>
+                        </ul>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg5_xref40.png" alt="Exemplo genérico de campos para solicitação de acesso ao Zowe" class="step-image clickable-img">
+                        <figcaption>Portal corporativo — exemplo de solicitação</figcaption>
+                    </figure>
+
+                    <div class="nav-buttons">
+                        <button class="btn prev-btn" data-target="introducao">⬅ Etapa anterior</button>
+                        <button class="btn next-btn" data-target="configuracao-zowe">Próxima Etapa ➔</button>
+                    </div>
+                </section>
+
+                <!-- ============================================================= -->
+                <!-- CONFIGURAÇÃO DO ZOWE -->
+                <!-- ============================================================= -->
+                <section id="configuracao-zowe" class="content-section">
+                    <h1>Configuração do Zowe</h1>
+
+                    <h2 id="passo-3">Passo 3: Configuração da Extensão Zowe</h2>
+                    <p>Com o VS Code instalado e o acesso liberado, vamos instalar e configurar a extensão do Zowe Explorer.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>VS Code Extensions:</strong> Acesse o marketplace de extensões (barra lateral), pesquise por <code>Zowe Explorer</code> e instale.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Painel Zowe Explorer:</strong> Após a instalação, clique no ícone da extensão Zowe na barra lateral esquerda do VS Code.
+                        </div>
+                    </div>
+                    <div class="image-row">
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg6_xref44.jpeg" alt="Zowe Explorer no marketplace de extensões do VS Code" class="step-image clickable-img">
+                            <figcaption>Marketplace — Zowe Explorer</figcaption>
+                        </figure>
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg6_xref46.png" alt="Ícone do Zowe Explorer na barra lateral" class="step-image clickable-img">
+                            <figcaption>Ícone do Zowe Explorer</figcaption>
+                        </figure>
+                    </div>
+
+                    <h3>Diretório Local e Arquivos de Configuração</h3>
+                    <p>Os arquivos precisam ser salvos na pasta local do usuário:</p>
+                    <div class="code-block">
+                        <pre><code>C:\Users\[seu_usuario]\.zowe</code></pre>
+                        <button class="copy-btn" aria-label="Copiar caminho">Copiar</button>
+                    </div>
+
+                    <ul class="feature-list">
+                        <li><strong>Arquivo <code>zowe.schema</code>:</strong> Manual de regras que validam as propriedades e garante tipos corretos.</li>
+                        <li><strong>Arquivo <code>zowe.config</code>:</strong> Contém os perfis de conexão do ambiente <code>&lt;organization&gt;</code>.</li>
+                    </ul>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg7_xref49.png" alt="Estrutura do diretório .zowe com os arquivos de configuração" class="step-image clickable-img">
+                        <figcaption>Diretório .zowe com os arquivos de configuração</figcaption>
+                    </figure>
+
+                    <hr>
+
+                    <h2 id="passo-4">Passo 4: Autenticação e Credenciais Zowe</h2>
+                    <p>Conexão Mainframe via Zowe Explorer.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            Na seção <code>DATA SETS</code>, conecte ao perfil <strong>zosmf</strong>, clique no ícone da lupa e informe <code>&lt;userid&gt;</code> e a credencial corporativa autorizada.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg8_xref52.png" alt="Painel Zowe Explorer com seção Data Sets e conexão zosmf" class="step-image clickable-img">
+                        <figcaption>Zowe Explorer — Data Sets e conexão zosmf</figcaption>
+                    </figure>
+
+                    <div class="alert tip">
+                        <strong>Dica de Uso:</strong> Após a autenticação, o acesso aos particionados é feito pela área de <em>Data Sets</em>. O sysout dos jobs executados serão exibidos na área de <em>Jobs</em> logo abaixo.
+                    </div>
+
+                    <hr>
+
+                    <h3 id="ref-bibliotecas">Referência Rápida de Bibliotecas</h3>
+                    <p>Relação rápida de bibliotecas para facilitar a navegação no Mainframe:</p>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Caminho / Filtro</th>
+                                    <th>Observação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Programas</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-programs&gt;</code></td>
+                                    <td>Substitua o placeholder pelo padrão aprovado pela sua organização.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Books</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-copybooks&gt;</code></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Fluxos</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-flows&gt;</code></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Telas IMS</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-screens&gt;</code></td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>JCL</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-jcl&gt;</code></td>
+                                    <td><code>&lt;environment&gt;</code></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>DCLGEN</strong></td>
+                                    <td><code>&lt;corporate-dataset-for-dclgen&gt;</code></td>
+                                    <td>Use o filtro autorizado para a área responsável.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Particionado</strong></td>
+                                    <td><code>&lt;corporate-partitioned-dataset&gt;</code></td>
+                                    <td>Substitua pelo nome aprovado do particionado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg9_xref55.png" alt="Exemplo de navegação utilizando filtros de bibliotecas no Zowe Explorer" class="step-image clickable-img">
+                        <figcaption>Navegação com filtros de bibliotecas no Zowe Explorer</figcaption>
+                    </figure>
+
+                    <hr>
+
+                    <h2 id="passo-5">Passo 5: Ajuste de Proxy (Tratamento de Erros)</h2>
+                    <p>Resolução de erro de Comunicação HTTP.</p>
+
+                    <div class="alert warning">
+                        <strong>Erro conhecido:</strong> Caso ocorra a mensagem <code>Failed to send an HTTP request</code>, ajuste as configurações de proxy conforme abaixo.
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Acessar Settings:</strong> Abra o menu de configurações do VS Code pressionando <code>Ctrl + ,</code>.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg10_xref58.jpeg" alt="Mensagem de erro Failed to send an HTTP request" class="step-image clickable-img">
+                        <figcaption>Mensagem de erro HTTP no VS Code</figcaption>
+                    </figure>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg10_xref60.jpeg" alt="Menu de configurações do VS Code" class="step-image clickable-img">
+                        <figcaption>Abrindo Settings do VS Code</figcaption>
+                    </figure>
+
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Pesquisar por Proxy:</strong> Na barra superior de busca das configurações, digite "Proxy".
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>Http: Proxy:</strong> Preencha o campo com o endpoint aprovado:
+                        </div>
+                    </div>
+                    <div class="code-block">
+                        <pre><code>https://&lt;zosmf-host&gt;</code></pre>
+                        <button class="copy-btn" aria-label="Copiar URL do proxy">Copiar</button>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <strong>Http: Proxy Support:</strong> Mude o valor de <em>override</em> para <code>off</code>.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg11_xref64.png" alt="Configuração do Http Proxy nas Settings do VS Code" class="step-image clickable-img">
+                        <figcaption>Configuração do Http Proxy</figcaption>
+                    </figure>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg11_xref66.png" alt="Http Proxy Support configurado como off" class="step-image clickable-img">
+                        <figcaption>Http Proxy Support definido como "off"</figcaption>
+                    </figure>
+
+                    <div class="nav-buttons">
+                        <button class="btn prev-btn" data-target="preparacao">⬅ Etapa anterior</button>
+                        <button class="btn next-btn" data-target="extensoes">Próxima Etapa ➔</button>
+                    </div>
+                </section>
+
+                <!-- ============================================================= -->
+                <!-- EXTENSÕES VSIX -->
+                <!-- ============================================================= -->
+                <section id="extensoes" class="content-section">
+                    <h1>Extensões Adicionais</h1>
+
+                    <h2 id="passo-6">Passo 6: Instalação das Extensões VSIX & GIT</h2>
+                    <p>Como estas extensões são corporativas locais, realizaremos a instalação via arquivo <code>.vsix</code>.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Acessar Extensões:</strong> Abra a aba de Extensões pressionando <code>Ctrl + Shift + X</code>, clique nos três pontos (<strong>...</strong>) no topo, depois em <code>Install from VSIX...</code>.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Instalar MF Helper:</strong> Selecione a extensão do <strong>MF Helper</strong>.
+                        </div>
+                    </div>
+                    <div class="image-row">
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg12_xref70.png" alt="Menu de três pontos com opção Install from VSIX" class="step-image clickable-img">
+                            <figcaption>Menu (...) → Install from VSIX...</figcaption>
+                        </figure>
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg12_xref71.png" alt="Seleção do arquivo VSIX do MF Helper" class="step-image clickable-img">
+                            <figcaption>Selecionando o arquivo do MF Helper</figcaption>
+                        </figure>
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>Instalar HUB de IA:</strong> Repita o mesmo processo para a extensão do <strong>HUB de IA</strong>.
+                        </div>
+                    </div>
+                    <div class="alert warning">
+                        <strong>Observação:</strong> Instale a versão aprovada; versões incompatíveis podem falhar ao acessar <code>&lt;internal-package-registry&gt;</code>.
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <strong>Reiniciar IDE:</strong> Logo após as instalações, reinicie o VS Code.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg13_xref76.png" alt="Instalação da extensão HUB de IA via VSIX" class="step-image clickable-img">
+                        <figcaption>Instalação da extensão do HUB de IA</figcaption>
+                    </figure>
+
+                    <h3>Instalação do GIT</h3>
+                    <div class="alert info">
+                        <strong>O Git é o motor de controle de versão</strong> instalado no seu sistema operacional. Embora o VS Code seja o editor de código (a interface visual onde você escreve e edita os arquivos), ele não gerencia o versionamento sozinho. A função desse programa dentro do VS Code é servir como a tecnologia principal que possibilita todas as ferramentas de controle de código da IDE.
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button class="btn prev-btn" data-target="configuracao-zowe">⬅ Etapa anterior</button>
+                        <button class="btn next-btn" data-target="copilot">Próxima Etapa ➔</button>
+                    </div>
+                </section>
+
+                <!-- ============================================================= -->
+                <!-- GITHUB COPILOT -->
+                <!-- ============================================================= -->
+                <section id="copilot" class="content-section">
+                    <h1>GitHub Copilot</h1>
+
+                    <h2 id="passo-7">Passo 7: Solicitação de Acesso ao GitHub Copilot</h2>
+                    <p>Licenciamento através de <code>&lt;corporate-license-portal&gt;</code>.</p>
+
+                    <div class="alert info">
+                        <strong>Pré-requisito:</strong> É necessário possuir acesso a <code>&lt;required-corporate-routine&gt;</code>.
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Acesso ao Portal:</strong> Acesse <code>&lt;corporate-license-portal&gt;</code> e selecione a opção de licenciamento do Copilot.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            Informe <code>&lt;corporate-email&gt;</code> em <strong>"Email solicitante"</strong>.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            Informe o e-mail do seu gerente, gerente departamental ou superintendente em <strong>"Email do gerente"</strong>.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            Clique em <strong>"Validar"</strong> ao lado de "Email do gerente". Este processo irá validar se o e-mail informado pertence a um gerente, gerente departamental ou superintendente. Se sim, os dados "Nome do gestor" e "Departamento" serão preenchidos.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            Selecione o centro de custo em <strong>"Selecione o centro de custos referente ao seu departamento"</strong>.
+                        </div>
+                    </div>
+                    <div class="instruction-step">
+                        <div class="step-number">6</div>
+                        <div class="step-content">
+                            Informe a justificativa da sua necessidade de uso e envie a solicitação.
+                        </div>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg15_xref90.png" alt="Exemplo de formulário corporativo para licenciamento do GitHub Copilot" class="step-image clickable-img">
+                        <figcaption>Formulário corporativo de licenciamento</figcaption>
+                    </figure>
+
+                    <div class="alert important">
+                        <strong>Acompanhamento:</strong> Acompanhe a solicitação em <code>&lt;corporate-access-portal&gt;</code> e valide a aprovação pelo SSO de <code>&lt;organization&gt;</code>.
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg16_xref95.png" alt="Tela genérica de Single Sign-On corporativo" class="step-image clickable-img">
+                        <figcaption>Single Sign-On — &lt;organization&gt;</figcaption>
+                    </figure>
+
+                    <hr>
+
+                    <h2 id="passo-8">Passo 8: Autenticação e Conexão do Copilot Business</h2>
+                    <p>Validação do Acesso Corporativo no VS Code.</p>
+
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Conexão:</strong> Clique no ícone do Copilot e faça login com <code>&lt;corporate-email&gt;</code>.
+                        </div>
+                    </div>
+                    <div class="image-row">
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg17_xref99.png" alt="Tela de login do GitHub Copilot com opção Continue with GitHub" class="step-image clickable-img">
+                            <figcaption>Sign in to GitHub Copilot</figcaption>
+                        </figure>
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg17_xref101.png" alt="Ícone do Copilot na barra inferior do VS Code" class="step-image clickable-img">
+                            <figcaption>Ícone do Copilot na status bar</figcaption>
+                        </figure>
+                    </div>
+                    <figure class="image-figure">
+                        <img src="assets/images/pdf/pg17_xref100.png" alt="Pré-requisitos atendidos do Zowe Explorer confirmados na tela de boas-vindas" class="step-image clickable-img">
+                        <figcaption>Pré-requisitos do Zowe Explorer atendidos</figcaption>
+                    </figure>
+
+                    <div class="alert warning">
+                        <strong>Logoff de Conta Pessoal:</strong> Se houver uma conta pessoal ativa no VS Code, faça <strong>Sign Out</strong> na aba de contas antes de prosseguir.
+                    </div>
+
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Acesso Business:</strong> Clique no ícone do Copilot no canto inferior direito e faça login com a conta <strong>business</strong>.
+                        </div>
+                    </div>
+                    <div class="image-row">
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg18_xref105.png" alt="Menu de contas do VS Code com opção Sign Out destacada" class="step-image clickable-img">
+                            <figcaption>Sign Out de conta pessoal</figcaption>
+                        </figure>
+                        <figure class="image-figure">
+                            <img src="assets/images/pdf/pg18_xref111.png" alt="Ícone do Copilot Business ativo na barra de status" class="step-image clickable-img">
+                            <figcaption>Copilot Business ativo</figcaption>
+                        </figure>
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button class="btn prev-btn" data-target="extensoes">⬅ Etapa anterior</button>
+                        <button class="btn next-btn" data-target="conclusao">Próxima Etapa ➔</button>
+                    </div>
+                </section>
+
+                <!-- ============================================================= -->
+                <!-- CONCLUSÃO -->
+                <!-- ============================================================= -->
+                <section id="conclusao" class="content-section">
+                    <h1>Conclusão</h1>
+                    <p>Parabéns! Você concluiu todas as etapas do <strong>Manual Simplificado: Conexão Zowe & Hub de IA</strong>.</p>
+
+                    <div class="alert tip">
+                        <strong>Resumo:</strong> Ao final deste guia, você terá configurado:
+                        <ul class="clean-list">
+                            <li>VS Code com a extensão <strong>Zowe Explorer</strong></li>
+                            <li>Acesso ao Mainframe via <strong>zosmf</strong> (<code>&lt;userid&gt;</code>)</li>
+                            <li>Extensões <strong>MF Helper</strong> e <strong>HUB de IA</strong> (VSIX)</li>
+                            <li><strong>GitHub Copilot Business</strong> ativo no VS Code</li>
+                        </ul>
+                    </div>
+
+                    <div class="alert info">
+                        <strong>Suporte:</strong> Em caso de dúvidas ou sugestões, contate <code>&lt;support-contact&gt;</code> pelo canal corporativo aprovado.
+                    </div>
+
+                    <p class="credits">&lt;organization&gt; | &lt;author&gt;</p>
+
+                    <div class="nav-buttons">
+                        <button class="btn prev-btn" data-target="copilot">⬅ Etapa anterior</button>
+                    </div>
+
+                    <div style="margin-top: 40px; text-align: center;">
+                        <button class="btn btn-outline" id="back-to-top">⬆ Retornar ao Início</button>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- IMAGE LIGHTBOX -->
+    <div class="lightbox" id="lightbox" hidden>
+        <button class="lightbox-close" id="lightbox-close" aria-label="Fechar imagem">&times;</button>
+        <img id="lightbox-img" src="" alt="Imagem ampliada">
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

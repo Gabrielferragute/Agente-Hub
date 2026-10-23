@@ -1,0 +1,39 @@
+[
+  {
+    "description": "Caso Simples - Onboarding",
+    "input": "Sou iniciante, estou começando agora",
+    "expectedDomain": "setup",
+    "expectedIntent": "first-time-setup",
+    "expectedSkill": "onboarding",
+    "expectedTier": "ECONOMY",
+    "expectedKnowledge": ["zowe-setup.md"]
+  },
+  {
+    "description": "Caso Intermediário - JCL",
+    "input": "O que significa DISP=SHR no meu job?",
+    "expectedDomain": "execution",
+    "expectedIntent": "explain-parameter",
+    "expectedSkill": "jcl-analysis",
+    "expectedTier": "STANDARD",
+    "expectedKnowledge": ["jcl-basics.md"]
+  },
+  {
+    "description": "Caso Complexo - Debug de ABEND",
+    "input": "Deu um erro no meu job. O dump gerado diz S0C7",
+    "expectedDomain": "debug",
+    "expectedIntent": "analyze-abend",
+    "expectedSkill": "cobol-debug",
+    "expectedTier": "DEEP",
+    "expectedKnowledge": ["abend-codes.md"]
+  },
+  {
+    "description": "Caso Ambíguo / Conflitante",
+    "input": "Estou começando a investigar um S0C7 em um programa COBOL grande.",
+    "expectedDomain": "debug",
+    "expectedIntent": "analyze-abend",
+    "expectedSkill": "cobol-debug",
+    "expectedTier": "DEEP",
+    "expectedKnowledge": ["abend-codes.md"],
+    "rationale": "Apesar da palavra 'começando', que sugeriria onboarding (ECONOMY), o peso da palavra 'S0C7' sobrepõe e joga a intenção para DEEP."
+  }
+]

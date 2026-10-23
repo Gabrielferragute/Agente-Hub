@@ -1,0 +1,155 @@
+{
+  "name": "mainframe-hub-assistant",
+  "displayName": "Mainframe Hub Assistant",
+  "publisher": "mainframe-hub",
+  "description": "Uma camada inteligente de suporte à migração TSO -> VS Code e desenvolvimento Mainframe.",
+  "version": "0.2.4",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "mainframe.hubAssistant",
+        "name": "mainframehub",
+        "description": "Assistente Mainframe: TSO, Zowe, JCL, COBOL e Otimização de IA",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "como-fazia-no-tso",
+            "description": "Como fazer algo que antes era feito no TSO/ISPF"
+          },
+          {
+            "name": "explicar",
+            "description": "Explicar sintaxe ou processo"
+          },
+          {
+            "name": "onboarding",
+            "description": "Guia inicial passo a passo"
+          },
+          {
+            "name": "abend",
+            "description": "Ajuda com troubleshooting de ABENDs"
+          },
+          {
+            "name": "srchfor",
+            "description": "Buscar string em membros de um Data Set (SuperC ISRSUPC)"
+          }
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "mainframeHub.testZoweReadOnly",
+        "title": "Mainframe Hub: Test Zowe Read-Only"
+      },
+      {
+        "command": "mainframeHub.testModelAccess",
+        "title": "Mainframe Hub: Test Model Access"
+      },
+      {
+        "command": "mainframeHub.testGpt4oMiniCall",
+        "title": "Mainframe Hub: Test GPT-4o Mini Call"
+      },
+      {
+        "command": "mainframeHub.testContextProcessor",
+        "title": "Mainframe Hub: Test Context Processor"
+      },
+      {
+        "command": "mainframeHub.testJclSkillPipeline",
+        "title": "Mainframe Hub: Test JCL Skill Pipeline"
+      },
+      {
+        "command": "mainframeHub.testJclRouterPipeline",
+        "title": "Mainframe Hub: Test JCL Router Pipeline"
+      },
+      {
+        "command": "mainframeHub.testJclLlmPipeline",
+        "title": "Mainframe Hub: Test JCL LLM Pipeline"
+      },
+      {
+        "command": "mainframeHub.pinProfile",
+        "title": "Mainframe Hub: Pin Zowe Profile"
+      },
+      {
+        "command": "mainframeHub.unpinProfile",
+        "title": "Mainframe Hub: Unpin Zowe Profile"
+      },
+      {
+        "command": "mainframeHub.srchfor",
+        "title": "Mainframe Hub: Buscar String em Data Set (SRCHFOR)"
+      }
+    ],
+    "configuration": {
+      "title": "Mainframe Hub Assistant",
+      "properties": {
+        "mainframeHub.workspaceProfile": {
+          "type": "string",
+          "default": "",
+          "description": "Nome do profile Zowe (zosmf) preferido para este workspace. Usado quando não há RESOURCE_CONTEXT nem profile pinnado na sessão."
+        },
+        "mainframeHub.workspaceProfileEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Habilita o uso do profile de workspace (mainframeHub.workspaceProfile) na cadeia de resolução."
+        },
+        "mainframeHub.srchfor.jobName": {
+          "type": "string",
+          "default": "SRCHFOR",
+          "description": "Nome do job (JOBNAME) para o submit do SuperC SRCHFOR (até 8 caracteres)."
+        },
+        "mainframeHub.srchfor.accountInfo": {
+          "type": "string",
+          "default": "ACCT",
+          "description": "Informação contábil do job card para o submit do SuperC SRCHFOR."
+        },
+        "mainframeHub.srchfor.jobClass": {
+          "type": "string",
+          "default": "A",
+          "description": "Classe de execução (CLASS) para o submit do SuperC SRCHFOR."
+        },
+        "mainframeHub.srchfor.msgClass": {
+          "type": "string",
+          "default": "X",
+          "description": "Classe de mensagem (MSGCLASS) para o submit do SuperC SRCHFOR."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test:core": "npm run compile && node --test out/test/core-hardening.test.js",
+    "test:profile": "npm run compile && node --test out/test/profile-context.test.js",
+    "test:model-router": "npm run compile && node --test out/test/model-router.test.js",
+    "test:knowledge-selector": "npm run compile && node --test out/test/knowledge-selector.test.js",
+    "test:guard": "npm run compile && node --test out/test/dataset-guard.test.js",
+    "test:srchfor": "npm run compile && node --test out/test/srchfor-template.test.js",
+    "test:abend": "npm run compile && node --test out/test/abend-analyzer.test.js",
+    "test:all": "npm run compile && node --test out/test/core-hardening.test.js out/test/profile-context.test.js out/test/model-router.test.js out/test/knowledge-selector.test.js out/test/dataset-guard.test.js out/test/srchfor-template.test.js out/test/abend-analyzer.test.js"
+  },
+  "dependencies": {
+    "@zowe/core-for-zowe-sdk": "^8.37.1",
+    "@zowe/imperative": "^8.37.1",
+    "@zowe/zos-files-for-zowe-sdk": "^8.37.1",
+    "@zowe/zos-jobs-for-zowe-sdk": "^8.37.1",
+    "@zowe/zowe-explorer-api": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/vscode": "^1.89.0",
+    "@vscode/vsce": "^3.2.2",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "notes": [
+      "Nenhuma restrição corporativa foi oficialmente fornecida.",
+      "Este arquivo contém apenas a defaultPolicy permissiva.",
+      "Overrides devem ser adicionados somente com base em políticas reais da InfoSec/Compliance."
+    ]
+  },
+  "governance": {
+    "defaultPolicy": {
+      "allowed": true,
+      "automaticSelectionAllowed": true,
+      "requiresApproval": false,
+      "dataRetentionReviewRequired": false
+    },
+    "overrides": {}
+  }
+}
